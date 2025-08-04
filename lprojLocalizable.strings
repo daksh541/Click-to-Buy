@@ -1,0 +1,101 @@
+/* hi.lproj/Localizable.strings */
+
+/* General */
+"app_title" = "हुंडई क्लिक टू बाय";
+"brand_name" = "हुंडई";
+"explore_models" = "हमारे मॉडल्स देखें";
+"vehicle_price_format" = "शुरुआती कीमत: ₹%@";
+"compare_button %lld" = "तुलना करें (%lld)";
+
+/* ContentView */
+"vehicle_type_picker_title" = "वाहन प्रकार";
+"appearance_picker_title" = "प्रकटन";
+"system_appearance" = "सिस्टम";
+"light_appearance" = "हल्का";
+"dark_appearance" = "गहरा";
+
+/* Vehicle Types */
+"all" = "सभी";
+"suv" = "एसयूवी";
+"sedan" = "सेडान";
+"hatchback" = "हैचबैक";
+"ev" = "ईवी";
+
+/* VehicleDetailView */
+"specifications_title" = "विनिर्देश";
+"engine_title" = "इंजन";
+"horsepower_title" = "हॉर्सपावर";
+"mileage_title" = "माइलेज";
+"transmission_title" = "ट्रांसमिशन";
+"explore_more_title" = "और देखें";
+"configure_buy_button" = "कॉन्फ़िगर करें और अभी खरीदें";
+"performance_title" = "प्रदर्शन";
+"features_tech_title" = "फीचर्स और तकनीक";
+"gallery_title" = "गैलरी";
+"service_title" = "सेवा";
+"service_maintenance_title %@" = "%@ के लिए सेवा और रखरखाव";
+
+/* PerformanceDetailView */
+"performance_details_title %@" = "%@ के लिए प्रदर्शन विवरण";
+"engine_powertrain_title" = "इंजन और पावरट्रेन";
+"acceleration_placeholder" = "त्वरण: 0-100 किमी/घंटा में X.X सेकंड (अनुमानित)";
+"top_speed_placeholder" = "शीर्ष गति: YYY किमी/घंटा (अनुमानित)";
+"driving_dynamics_title" = "ड्राइविंग डायनामिक्स";
+"suspension_details" = "सस्पेंशन: मैकफर्सन स्ट्रट फ्रंट / मल्टी-लिंक रियर";
+"brakes_details" = "ब्रेक्स: वेंटिलेटेड डिस्क फ्रंट / सॉलिड डिस्क रियर";
+"drive_type_ev" = "ड्राइव प्रकार: इलेक्ट्रिक FWD/AWD";
+"drive_type_fuel" = "ड्राइव प्रकार: FWD (AWD उपलब्ध)";
+
+/* FeaturesDetailView */
+"features_tech_title %@" = "%@ के लिए फीचर्स और तकनीक";
+"infotainment_title" = "इन्फोटेनमेंट";
+"infotainment_touchscreen" = "10.25-इंच टचस्क्रीन नेविगेशन";
+"infotainment_connectivity" = "एप्पल कारप्ले और एंड्रॉइड ऑटो (वायरलेस)";
+"infotainment_audio" = "बोस प्रीमियम ऑडियो सिस्टम (चयनित वेरिएंट)";
+"safety_driver_assist_title" = "सुरक्षा और ड्राइवर-सहायता";
+"safety_adas" = "हुंडई स्मार्टसेंस (ADAS सुइट उपलब्ध)";
+"safety_airbags" = "6 एयरबैग (अधिकांश मॉडल्स पर मानक)";
+"safety_vsm" = "वाहन स्थिरता प्रबंधन (VSM)";
+
+/* GalleryView */
+"gallery_title %@" = "%@ के लिए गैलरी";
+
+/* ConfigFormView */
+"personal_info_section" = "व्यक्तिगत जानकारी";
+"vehicle_config_section" = "वाहन कॉन्फ़िगरेशन";
+"full_name_placeholder" = "पूरा नाम";
+"email_placeholder" = "ईमेल";
+"phone_placeholder" = "फोन";
+"color_picker_title" = "रंग";
+"color_white" = "सफेद";
+"color_silver" = "चांदी";
+"color_black" = "काला";
+"trim_picker_title" = "ट्रिम";
+"trim_base" = "बेस";
+"trim_premium" = "प्रीमियम";
+"trim_top" = "टॉप";
+"selected_model %@" = "चयनित मॉडल: %@";
+"configure_title %@" = "%@ कॉन्फ़िगर करें";
+"cancel_button" = "रद्द करें";
+"proceed_buy_button" = "खरीद के लिए आगे बढ़ें";
+"purchase_initiated_title" = "खरीद शुरू की गई";
+"purchase_confirmation_message %@ %@ %@ %@ %@" = "धन्यवाद, %@! एक हुंडई प्रतिनिधि %@ पर आपसे संपर्क करेगा ताकि आपके %@ (%@, %@) खरीद को अंतिम रूप दिया जा सके।";
+"ok_button" = "ठीक है";
+
+/* FavoritesView */
+"your_favorites_title" = "आपके पसंदीदा";
+"no_favorites_message" = "अभी तक कोई पसंदीदा कार नहीं। कुछ जोड़ने के लिए हार्ट आइकन टैप करें!";
+
+/* CompareView */
+"compare_cars_title" = "कारों की तुलना करें";
+"no_compare_message" = "तुलना के लिए 2 कारों तक चुनें।";
+"clear_comparison_button" = "तुलना साफ़ करें";
+"type_title" = "प्रकार";
+"price_title" = "कीमत";
+
+/* LoginView */
+"welcome_back_title" = "वापस स्वागत है!";
+"login_title" = "लॉगिन";
+"login_button" = "लॉगिन";
+"signup_prompt" = "खाता नहीं है? साइन अप करें";
+"password_placeholder" = "पासवर्ड";
