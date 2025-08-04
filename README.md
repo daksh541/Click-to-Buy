@@ -18,21 +18,21 @@ A SwiftUI-based iOS app for browsing, configuring, and purchasing   vehicles, in
 - **Purchase Flow**: Configure vehicles and initiate purchases, stored in Firestore.
 
 ## Project Structure
-Click-To-Buy/
-├── App/
-│   ├── App.swift        # App entry point with Firebase setup
-│   ├── ContentView.swift       # Main UI for vehicle browsing
-│   ├── DetailViews.swift       # Detailed vehicle views (Performance, Features, Gallery)
-│   ├── LoginView.swift         # Login/Signup UI with Google and Apple Sign-In
-│   ├── Managers.swift          # Favorites, Comparison, and Motion managers
-│   ├── Models.swift            # Data models and VehicleViewModel
-│   ├── AuthManager.swift       # Firebase authentication logic
+Click-To-Buy
+├── App
+│   ├── App.swift
+│   ├── ContentView.swift
+│   ├── DetailViews.swift
+│   ├── LoginView.swift
+│   ├── Managers.swift
+│   ├── Models.swift
+│   ├── AuthManager.swift
 ├── Resources/
 │   ├── en.lproj/
-│   │   ├── Localizable.strings # English localization
+│   │   ├── Localizable.strings
 │   ├── hi.lproj/
-│   │   ├── Localizable.strings # Hindi localization
-│   ├── profile_title.strings   # Profile-specific strings
+│   │   ├── Localizable.strings
+│   ├── profile_title.strings
 ├── README.md
 ├── .gitignore
 ├── LICENSE
