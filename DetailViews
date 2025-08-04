@@ -1,0 +1,330 @@
+//
+// DetailViews.swift
+// Click to Buy
+//
+
+import SwiftUI
+
+struct VehicleDetailView: View {
+    let vehicle: Vehicle
+    @State private var showingConfigForm = false
+    @State private var scrollViewOffset: CGFloat = 0
+    let namespace: Namespace.ID
+    @EnvironmentObject var favoritesManager: FavoritesManager
+    @EnvironmentObject var comparisonManager: ComparisonManager
+
+    var body: some View {
+        ZStack {
+            ConditionalGradientBackground(userColorScheme: UserDefaults.standard.string(forKey: "colorScheme") ?? "system")
+                .ignoresSafeArea()
+
+            ScrollView {
+                GeometryReader { geometry in
+                    let minY = geometry.frame(in: .global).minY
+                    let offset = minY > 0 ? -minY * 0.5 : 0
+
+                    AsyncImage(url: URL(string: vehicle.imageURL)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: UIScreen.main.bounds.width, height: 250 + max(0, minY))
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 0))
+                            .offset(y: offset)
+                            .matchedGeometryEffect(id: "vehicleImage_\(vehicle.id)", in: namespace)
+                    } placeholder: {
+                        ProgressView()
+                            .frame(height: 250)
+                            .offset(y: offset)
+                    }
+                    .onChange(of: minY) { newMinY in
+                        self.scrollViewOffset = newMinY
+                    }
+                }
+                .frame(height: 250)
+
+                VStack(spacing: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(LocalizedStringKey(vehicle.name))
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                                .matchedGeometryEffect(id: "vehicleName_\(vehicle.id)", in: namespace)
+                                .accessibilityLabel(LocalizedStringKey("vehicle_name_accessibility \(vehicle.name)"))
+
+                            Spacer()
+
+                            Button {
+                                if favoritesManager.isFavorite(vehicle: vehicle) {
+                                    favoritesManager.removeFavorite(vehicle: vehicle)
+                                    HapticFeedback.play(.light)
+                                } else {
+                                    favoritesManager.addFavorite(vehicle: vehicle)
+                                    HapticFeedback.play(.success)
+                                }
+                            } label: {
+                                Image(systemName: favoritesManager.isFavorite(vehicle: vehicle) ? "heart.fill" : "heart")
+                                    .font(.title)
+                                    .foregroundColor(favoritesManager.isFavorite(vehicle: vehicle) ? .red : .secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(LocalizedStringKey(favoritesManager.isFavorite(vehicle: vehicle) ? "remove_favorite_accessibility" : "add_favorite_accessibility"))
+
+                            Button {
+                                if comparisonManager.contains(vehicle: vehicle) {
+                                    comparisonManager.removeVehicle(vehicle: vehicle)
+                                    HapticFeedback.play(.light)
+                                } else {
+                                    if comparisonManager.selectedVehicles.count < 2 {
+                                        comparisonManager.addVehicle(vehicle: vehicle)
+                                        HapticFeedback.play(.selection)
+                                    } else {
+                                        HapticFeedback.play(.error)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: comparisonManager.contains(vehicle: vehicle) ? "arrow.left.arrow.right.circle.fill" : "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(comparisonManager.contains(vehicle: vehicle) ? .green : .secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(LocalizedStringKey(comparisonManager.contains(vehicle: vehicle) ? "remove_compare_accessibility" : "add_compare_accessibility"))
+                        }
+
+                        Text(String(localized: "vehicle_price_format", String(format: "%.0f", vehicle.price)))
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                            .accessibilityLabel(LocalizedStringKey("vehicle_price_accessibility \(String(format: "%.0f", vehicle.price))"))
+
+                        Text(LocalizedStringKey(vehicle.description))
+                            .font(.body)
+                            .foregroundColor(.secondary)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(LocalizedStringKey("specifications_title"))
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            SpecificationRow(title: LocalizedStringKey("engine_title"), value: vehicle.specs.engine)
+                            SpecificationRow(title: LocalizedStringKey("horsepower_title"), value: vehicle.specs.horsepower)
+                            SpecificationRow(title: LocalizedStringKey("mileage_title"), value: vehicle.specs.fuelEconomy)
+                            SpecificationRow(title: LocalizedStringKey("transmission_title"), value: vehicle.specs.transmission)
+                        }
+                        .padding(.vertical)
+                    }
+                    .padding(.horizontal)
+                    .offset(y: -50)
+
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text(LocalizedStringKey("explore_more_title"))
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal)
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
+                            NavigationLink(destination: PerformanceDetailView(vehicle: vehicle)) {
+                                DetailNavigationButton(title: LocalizedStringKey("performance_title"), icon: "gauge.with.needle")
+                            }
+                            NavigationLink(destination: FeaturesDetailView(vehicle: vehicle)) {
+                                DetailNavigationButton(title: LocalizedStringKey("features_tech_title"), icon: "lightbulb.fill")
+                            }
+                            NavigationLink(destination: GalleryView(vehicle: vehicle)) {
+                                DetailNavigationButton(title: LocalizedStringKey("gallery_title"), icon: "photo.fill.on.rectangle.fill")
+                            }
+                            NavigationLink(destination: Text(LocalizedStringKey("service_maintenance_title \(vehicle.name)")).foregroundColor(.primary).font(.title)) {
+                                DetailNavigationButton(title: LocalizedStringKey("service_title"), icon: "wrench.and.screwdriver.fill")
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .offset(y: -50)
+
+                    Button(action: {
+                        showingConfigForm = true
+                        HapticFeedback.play(.soft)
+                    }) {
+                        Text(LocalizedStringKey("configure_buy_button"))
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue.opacity(AppTheme.accentButtonBackgroundOpacity))
+                            .clipShape(RoundedRectangle(cornerRadius: 15))
+                            .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 5)
+                    }
+                    .padding(.horizontal)
+                    .offset(y: -50)
+                    .accessibilityLabel(LocalizedStringKey("configure_buy_accessibility"))
+                }
+            }
+        }
+        .navigationTitle("")
+        .navigationBarHidden(true)
+        .sheet(isPresented: $showingConfigForm) {
+            ConfigFormView(vehicle: vehicle)
+        }
+    }
+}
+
+struct PerformanceDetailView: View {
+    let vehicle: Vehicle
+
+    var body: some View {
+        ZStack {
+            ConditionalGradientBackground(userColorScheme: UserDefaults.standard.string(forKey: "colorScheme") ?? "system")
+                .ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(LocalizedStringKey("performance_details_title \(vehicle.name)"))
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                        .padding(.bottom, 10)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(LocalizedStringKey("engine_powertrain_title"))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        SpecificationRow(title: LocalizedStringKey("engine_title"), value: vehicle.specs.engine)
+                        SpecificationRow(title: LocalizedStringKey("horsepower_title"), value: vehicle.specs.horsepower)
+                        SpecificationRow(title: LocalizedStringKey("mileage_title"), value: vehicle.specs.fuelEconomy)
+                        SpecificationRow(title: LocalizedStringKey("transmission_title"), value: vehicle.specs.transmission)
+                        Text(LocalizedStringKey("acceleration_placeholder"))
+                            .foregroundColor(.secondary)
+                        Text(LocalizedStringKey("top_speed_placeholder"))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.primary.opacity(AppTheme.cardBackgroundOpacity / 2))
+                    .cornerRadius(15)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(LocalizedStringKey("driving_dynamics_title"))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Text(LocalizedStringKey("suspension_details"))
+                            .foregroundColor(.secondary)
+                        Text(LocalizedStringKey("brakes_details"))
+                            .foregroundColor(.secondary)
+                        Text(LocalizedStringKey(vehicle.vehicleType == .ev ? "drive_type_ev" : "drive_type_fuel"))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.primary.opacity(AppTheme.cardBackgroundOpacity / 2))
+                    .cornerRadius(15)
+
+                    Spacer()
+                }
+                .padding()
+            }
+        }
+        .navigationTitle(LocalizedStringKey(vehicle.name))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct FeaturesDetailView: View {
+    let vehicle: Vehicle
+
+    var body: some View {
+        ZStack {
+            ConditionalGradientBackground(userColorScheme: UserDefaults.standard.string(forKey: "colorScheme") ?? "system")
+                .ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(LocalizedStringKey("features_tech_title \(vehicle.name)"))
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                        .padding(.bottom, 10)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(LocalizedStringKey("infotainment_title"))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Text(LocalizedStringKey("infotainment_touchscreen"))
+                            .foregroundColor(.secondary)
+                        Text(LocalizedStringKey("infotainment_connectivity"))
+                            .foregroundColor(.secondary)
+                        Text(LocalizedStringKey("infotainment_audio"))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.primary.opacity(AppTheme.cardBackgroundOpacity / 2))
+                    .cornerRadius(15)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(LocalizedStringKey("safety_driver_assist_title"))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Text(LocalizedStringKey("safety_adas"))
+                            .foregroundColor(.secondary)
+                        Text(LocalizedStringKey("safety_airbags"))
+                            .foregroundColor(.secondary)
+                        Text(LocalizedStringKey("safety_vsm"))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.primary.opacity(AppTheme.cardBackgroundOpacity / 2))
+                    .cornerRadius(15)
+
+                    Spacer()
+                }
+                .padding()
+            }
+        }
+        .navigationTitle(LocalizedStringKey(vehicle.name))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct GalleryView: View {
+    let vehicle: Vehicle
+    let dummyImages: [String] = [
+        "https://images.hindustantimes.com/auto/img/2023/11/08/900x1600/Hyundai-Creta-N-Line-1_1700657960351_1700657980311.jpg",
+        "https://imgd.aeplcdn.com/1280x720/n/cw/ec/158223/exterior-right-front-three-quarter-3.jpeg?isig=0",
+        "https://imgd.aeplcdn.com/1280x720/n/cw/ec/144687/exterior-left-front-three-quarter-2.jpeg?isig=0",
+        "https://www.carandbike.com/_next/image?url=https%3A%2F%2Fimages.carandbike.com%2Fcar-images%2Fgallery%2Fhyundai%2Fioniq-5%2Fexterior%2Fhyundai-ioniq-5-front-view-1.webp%3Fv%3D1670732483 W=1920&q=75"
+    ]
+
+    var body: some View {
+        ZStack {
+            ConditionalGradientBackground(userColorScheme: UserDefaults.standard.string(forKey: "colorScheme") ?? "system")
+                .ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(LocalizedStringKey("gallery_title \(vehicle.name)"))
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                        .padding(.bottom, 10)
+
+                    ForEach(dummyImages, id: \.self) { imageUrl in
+                        AsyncImage(url: URL(string: imageUrl)) { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity)
+                                .clipShape(RoundedRectangle(cornerRadius: 15))
+                                .shadow(radius: 5)
+                        } placeholder: {
+                            ProgressView()
+                                .frame(height: 200)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding()
+            }
+        }
+        .navigationTitle(LocalizedStringKey(vehicle.name))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
