@@ -1,0 +1,251 @@
+//
+// UtilityViews.swift
+// Click to Buy
+//
+
+import SwiftUI
+
+struct ConfigFormView: View {
+    let vehicle: Vehicle
+    @EnvironmentObject var authManager: AuthManager
+    @State private var name = ""
+    @State private var email = ""
+    @State private var phone = ""
+    @State private var color = "White"
+    @State private var trim = "Base"
+    @State private var showingConfirmation = false
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text(LocalizedStringKey("personal_info_section")).foregroundColor(.accentColor)) {
+                    TextField(LocalizedStringKey("full_name_placeholder"), text: $name)
+                        .accessibilityLabel(LocalizedStringKey("full_name_accessibility"))
+                    TextField(LocalizedStringKey("email_placeholder"), text: $email)
+                        .keyboardType(.emailAddress)
+                        .accessibilityLabel(LocalizedStringKey("email_accessibility"))
+                    TextField(LocalizedStringKey("phone_placeholder"), text: $phone)
+                        .keyboardType(.phonePad)
+                        .accessibilityLabel(LocalizedStringKey("phone_accessibility"))
+                }
+
+                Section(header: Text(LocalizedStringKey("vehicle_config_section")).foregroundColor(.accentColor)) {
+                    Picker(LocalizedStringKey("color_picker_title"), selection: $color) {
+                        Text(LocalizedStringKey("color_white")).tag("White")
+                        Text(LocalizedStringKey("color_silver")).tag("Silver")
+                        Text(LocalizedStringKey("color_black")).tag("Black")
+                    }
+                    .onChange(of: color) { _ in HapticFeedback.play(.selection) }
+                    .accessibilityLabel(LocalizedStringKey("color_picker_accessibility"))
+
+                    Picker(LocalizedStringKey("trim_picker_title"), selection: $trim) {
+                        Text(LocalizedStringKey("trim_base")).tag("Base")
+                        Text(LocalizedStringKey("trim_premium")).tag("Premium")
+                        Text(LocalizedStringKey("trim_top")).tag("Top")
+                    }
+                    .onChange(of: trim) { _ in HapticFeedback.play(.selection) }
+                    .accessibilityLabel(LocalizedStringKey("trim_picker_accessibility"))
+
+                    Text(LocalizedStringKey("selected_model \(vehicle.name)"))
+                        .foregroundColor(.secondary)
+                    Text(String(localized: "vehicle_price_format", String(format: "%.0f", vehicle.price)))
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel(LocalizedStringKey("vehicle_price_accessibility \(String(format: "%.0f", vehicle.price))"))
+                }
+            }
+            .navigationTitle(LocalizedStringKey("configure_title \(vehicle.name)"))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizedStringKey("cancel_button")) { dismiss() }
+                        .accessibilityLabel(LocalizedStringKey("cancel_accessibility"))
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(LocalizedStringKey("proceed_buy_button")) {
+                        Task {
+                            let purchase = Purchase(
+                                id: nil,
+                                userID: authManager.user?.uid ?? "",
+                                vehicleName: vehicle.name,
+                                color: color,
+                                trim: trim,
+                                price: vehicle.price,
+                                date: Date()
+                            )
+                            await authManager.savePurchase(purchase: purchase)
+                            showingConfirmation = true
+                        }
+                    }
+                    .disabled(name.isEmpty || email.isEmpty || phone.isEmpty)
+                    .accessibilityLabel(LocalizedStringKey("proceed_buy_accessibility"))
+                }
+            }
+            .alert(isPresented: $showingConfirmation) {
+                Alert(
+                    title: Text(LocalizedStringKey("purchase_initiated_title")),
+                    message: Text(LocalizedStringKey("purchase_confirmation_message \(name) \(email) \(vehicle.name) \(color) \(trim)")),
+                    dismissButton: .default(Text(LocalizedStringKey("ok_button"))) {
+                        dismiss()
+                        HapticFeedback.play(.success)
+                    }
+                )
+            }
+        }
+    }
+}
+
+struct FavoritesView: View {
+    @EnvironmentObject var favoritesManager: FavoritesManager
+    @EnvironmentObject var viewModel: VehicleViewModel
+    @Namespace var favoritesNamespace
+
+    var body: some View {
+        ZStack {
+            ConditionalGradientBackground(userColorScheme: UserDefaults.standard.string(forKey: "colorScheme") ?? "system")
+                .ignoresSafeArea()
+            VStack {
+                Text(LocalizedStringKey("your_favorites_title"))
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .padding(.top, 20)
+                    .padding(.bottom, 10)
+                    .accessibilityLabel(LocalizedStringKey("your_favorites_accessibility"))
+
+                if favoritesManager.favoriteVehicleIDs.isEmpty {
+                    Spacer()
+                    Text(LocalizedStringKey("no_favorites_message"))
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                    Spacer()
+                } else {
+                    ScrollView {
+                        VStack(spacing: 15) {
+                            ForEach(favoritesManager.getFavoriteVehicles(from: viewModel)) { vehicle in
+                                NavigationLink(destination: VehicleDetailView(vehicle: vehicle, namespace: favoritesNamespace)) {
+                                    VehicleCardView(vehicle: vehicle, namespace: favoritesNamespace)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical)
+                    }
+                }
+            }
+        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct CompareView: View {
+    @EnvironmentObject var comparisonManager: ComparisonManager
+
+    var body: some View {
+        ZStack {
+            ConditionalGradientBackground(userColorScheme: UserDefaults.standard.string(forKey: "colorScheme") ?? "system")
+                .ignoresSafeArea()
+            VStack {
+                Text(LocalizedStringKey("compare_cars_title"))
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .padding(.top, 20)
+                    .padding(.bottom, 10)
+                    .accessibilityLabel(LocalizedStringKey("compare_cars_accessibility"))
+
+                if comparisonManager.selectedVehicles.isEmpty {
+                    Spacer()
+                    Text(LocalizedStringKey("no_compare_message"))
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .padding()
+                    Spacer()
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 20) {
+                            ForEach(comparisonManager.selectedVehicles) { vehicle in
+                                ComparisonCard(vehicle: vehicle)
+                                    .frame(width: UIScreen.main.bounds.width * 0.8)
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
+                    }
+
+                    Button(LocalizedStringKey("clear_comparison_button")) {
+                        comparisonManager.clearComparison()
+                        HapticFeedback.play(.selection)
+                    }
+                    .font(.headline)
+                    .padding()
+                    .background(Color.red.opacity(AppTheme.accentButtonBackgroundOpacity))
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+                    .padding(.bottom, 20)
+                    .accessibilityLabel(LocalizedStringKey("clear_comparison_accessibility"))
+                }
+            }
+        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct ComparisonCard: View {
+    let vehicle: Vehicle
+    @EnvironmentObject var comparisonManager: ComparisonManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(LocalizedStringKey(vehicle.name))
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .accessibilityLabel(LocalizedStringKey("vehicle_name_accessibility \(vehicle.name)"))
+                Spacer()
+                Button {
+                    comparisonManager.removeVehicle(vehicle: vehicle)
+                    HapticFeedback.play(.light)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.red)
+                }
+                .accessibilityLabel(LocalizedStringKey("remove_compare_accessibility"))
+            }
+            .padding(.bottom, 5)
+
+            AsyncImage(url: URL(string: vehicle.imageURL)) { image in
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            } placeholder: {
+                ProgressView()
+                    .frame(height: 120)
+            }
+
+            Divider().background(Color.primary.opacity(0.5))
+
+            VStack(alignment: .leading, spacing: 5) {
+                ComparisonSpecRow(title: LocalizedStringKey("type_title"), value: LocalizedStringKey(vehicle.vehicleType.rawValue.lowercased()))
+                ComparisonSpecRow(title: LocalizedStringKey("price_title"), value: String(localized: "vehicle_price_format", String(format: "%.0f", vehicle.price)))
+                ComparisonSpecRow(title: LocalizedStringKey("engine_title"), value: vehicle.specs.engine)
+                ComparisonSpecRow(title: LocalizedStringKey("horsepower_title"), value: vehicle.specs.horsepower)
+                ComparisonSpecRow(title: LocalizedStringKey("mileage_title"), value: vehicle.specs.fuelEconomy)
+                ComparisonSpecRow(title: LocalizedStringKey("transmission_title"), value: vehicle.specs.transmission)
+            }
+            Spacer()
+        }
+        .padding()
+        .background(Color.primary.opacity(AppTheme.cardBackgroundOpacity))
+        .cornerRadius(15)
+        .shadow(radius: 5)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(LocalizedStringKey("comparison_card_accessibility \(vehicle.name)"))
+    }
+}
