@@ -1,0 +1,286 @@
+//
+// AuthManager.swift
+// Hyundai Click to Buy
+//
+
+import Foundation
+import FirebaseAuth
+import FirebaseFirestore
+import FirebaseFirestoreSwift
+import FirebaseAnalytics
+import GoogleSignIn
+import AuthenticationServices
+import CryptoKit
+
+class AuthManager: ObservableObject {
+    @Published var user: User?
+    @Published var isAuthenticated: Bool = false
+    @Published var authError: Error?
+    @Published var currentUserProfile: UserProfile?
+    private var authStateDidChangeListenerHandle: AuthStateDidChangeListenerHandle?
+
+    init() {
+        authStateDidChangeListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] auth, user in
+            DispatchQueue.main.async {
+                self?.user = user
+                self?.isAuthenticated = (user != nil)
+                if user != nil {
+                    Task {
+                        await self?.fetchUserProfile()
+                    }
+                } else {
+                    self?.currentUserProfile = nil
+                }
+            }
+        }
+    }
+
+    deinit {
+        if let handle = authStateDidChangeListenerHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
+        }
+    }
+
+    func login(email: String, password: String) async {
+        authError = nil
+        do {
+            let result = try await Auth.auth().signIn(withEmail: email, password: password)
+            Analytics.logEvent("login_success", parameters: ["method": "email"])
+            print("User logged in: \(result.user.uid)")
+        } catch {
+            DispatchQueue.main.async {
+                self.authError = error
+                Analytics.logEvent("login_failure", parameters: ["error": error.localizedDescription])
+                print("Login error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func signup(email: String, password: String, fullName: String) async {
+        authError = nil
+        do {
+            let result = try await Auth.auth().createUser(withEmail: email, password: password)
+            let newProfile = UserProfile(
+                id: result.user.uid,
+                email: email,
+                fullName: fullName,
+                phoneNumber: nil,
+                preferredLanguage: Locale.current.languageCode
+            )
+            await updateProfile(profile: newProfile)
+            Analytics.logEvent("signup_success", parameters: ["method": "email"])
+            print("User signed up: \(result.user.uid)")
+        } catch {
+            DispatchQueue.main.async {
+                self.authError = error
+                Analytics.logEvent("signup_failure", parameters: ["error": error.localizedDescription])
+                print("Signup error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func signOut() {
+        authError = nil
+        do {
+            try Auth.auth().signOut()
+            DispatchQueue.main.async {
+                self.isAuthenticated = false
+                self.currentUserProfile = nil
+                Analytics.logEvent("signout_success", parameters: nil)
+                print("User signed out")
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.authError = error
+                Analytics.logEvent("signout_failure", parameters: ["error": error.localizedDescription])
+                print("Sign out error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func fetchUserProfile() async {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("No authenticated user")
+            return
+        }
+        let db = Firestore.firestore()
+        do {
+            let doc = try await db.collection("users").document(uid).getDocument()
+            if let profile = try? doc.data(as: UserProfile.self) {
+                DispatchQueue.main.async {
+                    self.currentUserProfile = profile
+                    print("Profile fetched: \(profile.email)")
+                }
+            } else {
+                if let email = Auth.auth().currentUser?.email {
+                    let newProfile = UserProfile(
+                        id: uid,
+                        email: email,
+                        fullName: "",
+                        phoneNumber: nil,
+                        preferredLanguage: Locale.current.languageCode
+                    )
+                    try db.collection("users").document(uid).setData(from: newProfile)
+                    DispatchQueue.main.async {
+                        self.currentUserProfile = newProfile
+                        print("Created new profile for: \(email)")
+                    }
+                }
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.authError = error
+                print("Error fetching profile: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func updateProfile(profile: UserProfile) async {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("No authenticated user")
+            return
+        }
+        let db = Firestore.firestore()
+        do {
+            try db.collection("users").document(uid).setData(from: profile)
+            DispatchQueue.main.async {
+                self.currentUserProfile = profile
+                Analytics.logEvent("profile_updated", parameters: ["user_id": uid])
+                print("Profile updated: \(profile.email)")
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.authError = error
+                print("Error updating profile: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func signInWithGoogle(presenting: UIViewController) async {
+        authError = nil
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            DispatchQueue.main.async {
+                self.authError = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing Firebase client ID"])
+            }
+            return
+        }
+        let config = GIDConfiguration(clientID: clientID)
+        do {
+            let user = try await GIDSignIn.sharedInstance.signIn(with: config, presenting: presenting)
+            guard let idToken = user.authentication.idToken else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No Google ID token"])
+            }
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.authentication.accessToken)
+            let result = try await Auth.auth().signIn(with: credential)
+            let newProfile = UserProfile(
+                id: result.user.uid,
+                email: result.user.email ?? "",
+                fullName: user.user.profile?.name ?? "",
+                phoneNumber: nil,
+                preferredLanguage: Locale.current.languageCode
+            )
+            await updateProfile(profile: newProfile)
+            Analytics.logEvent("login_success", parameters: ["method": "google"])
+            print("Google Sign-In successful: \(result.user.uid)")
+        } catch {
+            DispatchQueue.main.async {
+                self.authError = error
+                Analytics.logEvent("login_failure", parameters: ["method": "google", "error": error.localizedDescription])
+                print("Google Sign-In error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func signInWithApple(authorization: ASAuthorization) async {
+        authError = nil
+        if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+            guard let nonce = currentNonce, let appleIDToken = appleIDCredential.identityToken else {
+                DispatchQueue.main.async {
+                    self.authError = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid Apple credential"])
+                }
+                return
+            }
+            guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+                DispatchQueue.main.async {
+                    self.authError = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to serialize Apple token"])
+                }
+                return
+            }
+            let credential = OAuthProvider.credential(withProviderID: "apple.com", idToken: idTokenString, rawNonce: nonce)
+            do {
+                let result = try await Auth.auth().signIn(with: credential)
+                let fullName = appleIDCredential.fullName?.givenName ?? ""
+                let newProfile = UserProfile(
+                    id: result.user.uid,
+                    email: appleIDCredential.email ?? result.user.email ?? "",
+                    fullName: fullName,
+                    phoneNumber: nil,
+                    preferredLanguage: Locale.current.languageCode
+                )
+                await updateProfile(profile: newProfile)
+                Analytics.logEvent("login_success", parameters: ["method": "apple"])
+                print("Apple Sign-In successful: \(result.user.uid)")
+            } catch {
+                DispatchQueue.main.async {
+                    self.authError = error
+                    Analytics.logEvent("login_failure", parameters: ["method": "apple", "error": error.localizedDescription])
+                    print("Apple Sign-In error: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private var currentNonce: String?
+
+    func startSignInWithAppleFlow() -> ASAuthorizationAppleIDRequest {
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+        return request
+    }
+
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        var result = ""
+        var remainingLength = length
+        while remainingLength > 0 {
+            let randoms: [UInt8] = (0 ..< 16).map { _ in UInt8.random(in: 0...255) }
+            for random in randoms {
+                if remainingLength == 0 { break }
+                if random < charset.count {
+                    result.append(charset[Int(random)])
+                    remainingLength -= 1
+                }
+            }
+        }
+        return result
+    }
+
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        let hashString = hashedData.compactMap { String(format: "%02x", $0) }.joined()
+        return hashString
+    }
+
+    func savePurchase(purchase: Purchase) async {
+        let db = Firestore.firestore()
+        do {
+            try db.collection("purchases").document().setData(from: purchase)
+            Analytics.logEvent("purchase_initiated", parameters: [
+                "vehicle_name": purchase.vehicleName,
+                "price": purchase.price
+            ])
+            print("Purchase saved: \(purchase.vehicleName)")
+        } catch {
+            DispatchQueue.main.async {
+                self.authError = error
+                print("Error saving purchase: \(error.localizedDescription)")
+            }
+        }
+    }
+}
