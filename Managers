@@ -1,0 +1,91 @@
+//
+// Managers.swift
+// Click to Buy
+//
+
+import Foundation
+import CoreMotion
+import SwiftUI
+
+class FavoritesManager: ObservableObject {
+    @Published var favoriteVehicleIDs: [UUID] {
+        didSet {
+            UserDefaults.standard.set(favoriteVehicleIDs.map { $0.uuidString }, forKey: "favoriteVehicleIDs")
+        }
+    }
+
+    init() {
+        if let data = UserDefaults.standard.array(forKey: "favoriteVehicleIDs") as? [String] {
+            self.favoriteVehicleIDs = data.compactMap(UUID.init)
+        } else {
+            self.favoriteVehicleIDs = []
+        }
+    }
+
+    func isFavorite(vehicle: Vehicle) -> Bool {
+        favoriteVehicleIDs.contains(vehicle.id)
+    }
+
+    func addFavorite(vehicle: Vehicle) {
+        if !isFavorite(vehicle: vehicle) {
+            favoriteVehicleIDs.append(vehicle.id)
+        }
+    }
+
+    func removeFavorite(vehicle: Vehicle) {
+        favoriteVehicleIDs.removeAll { $0 == vehicle.id }
+    }
+
+    func getFavoriteVehicles(from viewModel: VehicleViewModel) -> [Vehicle] {
+        viewModel.vehicles.filter { favoriteVehicleIDs.contains($0.id) }
+    }
+}
+
+class ComparisonManager: ObservableObject {
+    @Published var selectedVehicles: [Vehicle] = []
+
+    func addVehicle(vehicle: Vehicle) {
+        if !contains(vehicle: vehicle) && selectedVehicles.count < 2 {
+            selectedVehicles.append(vehicle)
+        }
+    }
+
+    func removeVehicle(vehicle: Vehicle) {
+        selectedVehicles.removeAll { $0.id == vehicle.id }
+    }
+
+    func contains(vehicle: Vehicle) -> Bool {
+        selectedVehicles.contains { $0.id == vehicle.id }
+    }
+
+    func clearComparison() {
+        selectedVehicles.removeAll()
+    }
+}
+
+class MotionManager: ObservableObject {
+    private let motionManager = CMMotionManager()
+    @Published var roll: Double = 0.0
+    @Published var pitch: Double = 0.0
+
+    init() {
+        if motionManager.isDeviceMotionAvailable {
+            motionManager.deviceMotionUpdateInterval = 0.1
+        }
+    }
+
+    func startUpdates() {
+        guard motionManager.isDeviceMotionAvailable else { return }
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] (motion, error) in
+            guard let self = self, let motion = motion else { return }
+            DispatchQueue.main.async {
+                self.roll = motion.attitude.roll
+                self.pitch = motion.attitude.pitch
+            }
+        }
+    }
+
+    func stopUpdates() {
+        motionManager.stopDeviceUpdates()
+    }
+}
