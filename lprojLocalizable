@@ -1,0 +1,101 @@
+/* en.lproj/Localizable.strings */
+
+/* General */
+"app_title" = "Hyundai Click to Buy";
+"brand_name" = "Hyundai";
+"explore_models" = "Explore Our Models";
+"vehicle_price_format" = "Starting Price: ₹%@";
+"compare_button %lld" = "Compare (%lld)";
+
+/* ContentView */
+"vehicle_type_picker_title" = "Vehicle Type";
+"appearance_picker_title" = "Appearance";
+"system_appearance" = "System";
+"light_appearance" = "Light";
+"dark_appearance" = "Dark";
+
+/* Vehicle Types */
+"all" = "All";
+"suv" = "SUV";
+"sedan" = "Sedan";
+"hatchback" = "Hatchback";
+"ev" = "EV";
+
+/* VehicleDetailView */
+"specifications_title" = "Specifications";
+"engine_title" = "Engine";
+"horsepower_title" = "Horsepower";
+"mileage_title" = "Mileage";
+"transmission_title" = "Transmission";
+"explore_more_title" = "Explore More";
+"configure_buy_button" = "Configure & Buy Now";
+"performance_title" = "Performance";
+"features_tech_title" = "Features & Tech";
+"gallery_title" = "Gallery";
+"service_title" = "Service";
+"service_maintenance_title %@" = "Service & Maintenance for %@";
+
+/* PerformanceDetailView */
+"performance_details_title %@" = "Performance Details for %@";
+"engine_powertrain_title" = "Engine & Powertrain";
+"acceleration_placeholder" = "Acceleration: 0-100 km/h in X.X seconds (Estimated)";
+"top_speed_placeholder" = "Top Speed: YYY km/h (Estimated)";
+"driving_dynamics_title" = "Driving Dynamics";
+"suspension_details" = "Suspension: MacPherson Strut Front / Multi-link Rear";
+"brakes_details" = "Brakes: Ventilated Discs Front / Solid Discs Rear";
+"drive_type_ev" = "Drive Type: Electric FWD/AWD";
+"drive_type_fuel" = "Drive Type: FWD (AWD available)";
+
+/* FeaturesDetailView */
+"features_tech_title %@" = "Features & Technology for %@";
+"infotainment_title" = "Infotainment";
+"infotainment_touchscreen" = "10.25-inch Touchscreen Navigation";
+"infotainment_connectivity" = "Apple CarPlay & Android Auto (Wireless)";
+"infotainment_audio" = "Bose Premium Audio System (select variants)";
+"safety_driver_assist_title" = "Safety & Driver-Assist";
+"safety_adas" = "Hyundai SmartSense (ADAS Suite available)";
+"safety_airbags" = "6 Airbags (Standard on most models)";
+"safety_vsm" = "Vehicle Stability Management (VSM)";
+
+/* GalleryView */
+"gallery_title %@" = "Gallery for %@";
+
+/* ConfigFormView */
+"personal_info_section" = "Personal Information";
+"vehicle_config_section" = "Vehicle Configuration";
+"full_name_placeholder" = "Full Name";
+"email_placeholder" = "Email";
+"phone_placeholder" = "Phone";
+"color_picker_title" = "Color";
+"color_white" = "White";
+"color_silver" = "Silver";
+"color_black" = "Black";
+"trim_picker_title" = "Trim";
+"trim_base" = "Base";
+"trim_premium" = "Premium";
+"trim_top" = "Top";
+"selected_model %@" = "Selected Model: %@";
+"configure_title %@" = "Configure %@";
+"cancel_button" = "Cancel";
+"proceed_buy_button" = "Proceed to Buy";
+"purchase_initiated_title" = "Purchase Initiated";
+"purchase_confirmation_message %@ %@ %@ %@ %@" = "Thank you, %@! A Hyundai representative will contact you at %@ to finalize your %@ (%@, %@) purchase.";
+"ok_button" = "OK";
+
+/* FavoritesView */
+"your_favorites_title" = "Your Favorites";
+"no_favorites_message" = "No favorite cars yet. Tap the heart icon to add some!";
+
+/* CompareView */
+"compare_cars_title" = "Compare Cars";
+"no_compare_message" = "Select up to 2 cars to compare.";
+"clear_comparison_button" = "Clear Comparison";
+"type_title" = "Type";
+"price_title" = "Price";
+
+/* LoginView */
+"welcome_back_title" = "Welcome Back!";
+"login_title" = "Login";
+"login_button" = "Login";
+"signup_prompt" = "Don't have an account? Sign Up";
+"password_placeholder" = "Password";
