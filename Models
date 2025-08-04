@@ -1,0 +1,247 @@
+//
+// Models.swift
+// Click to Buy
+//
+
+import Foundation
+import FirebaseFirestoreSwift
+
+enum VehicleType: String, CaseIterable, Identifiable {
+    case all = "All"
+    case suv = "SUV"
+    case sedan = "Sedan"
+    case hatchback = "Hatchback"
+    case ev = "EV"
+
+    var id: String { self.rawValue }
+}
+
+struct Vehicle: Identifiable, Equatable, Codable {
+    let id = UUID()
+    let name: String
+    let description: String
+    let price: Double
+    let imageURL: String
+    let specs: VehicleSpecs
+    let vehicleType: VehicleType
+
+    static func == (lhs: Vehicle, rhs: Vehicle) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+struct VehicleSpecs: Codable {
+    let engine: String
+    let horsepower: String
+    let fuelEconomy: String
+    let transmission: String
+}
+
+struct Purchase: Identifiable, Codable {
+    @DocumentID var id: String?
+    let userID: String
+    let vehicleName: String
+    let color: String
+    let trim: String
+    let price: Double
+    let date: Date
+}
+
+class VehicleViewModel: ObservableObject {
+    @Published var vehicles: [Vehicle] = [
+        Vehicle(
+            name: "Creta",
+            description: "India's bestselling compact SUV, stylish and feature-packed.",
+            price: 1100000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/Creta/10416/1691461971708/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "1.5L Petrol/Diesel/Turbo Petrol",
+                horsepower: "115-160 hp",
+                fuelEconomy: "17-21 kmpl",
+                transmission: "6MT/IVT/7DCT"
+            ),
+            vehicleType: .suv
+        ),
+        Vehicle(
+            name: "Creta N Line",
+            description: "Sporty variant of the Creta with performance accents.",
+            price: 1682000,
+            imageURL: "https://images.hindustantimes.com/auto/img/2023/11/08/900x1600/Hyundai-Creta-N-Line-1_1700657960351_1700657980311.jpg",
+            specs: VehicleSpecs(
+                engine: "1.5L Turbo Petrol",
+                horsepower: "160 hp",
+                fuelEconomy: "18 kmpl",
+                transmission: "6MT/7DCT"
+            ),
+            vehicleType: .suv
+        ),
+        Vehicle(
+            name: "Venue",
+            description: "Compact SUV, perfect for urban adventures.",
+            price: 800000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/Venue/8681/1655455985854/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "1.2L Petrol/1.0L Turbo Petrol",
+                horsepower: "83-120 hp",
+                fuelEconomy: "17-23 kmpl",
+                transmission: "5MT/6MT/IVT/7DCT"
+            ),
+            vehicleType: .suv
+        ),
+        Vehicle(
+            name: "Venue N Line",
+            description: "Dynamic and aggressive version of the Venue.",
+            price: 1208000,
+            imageURL: "https://imgd.aeplcdn.com/1280x720/n/cw/ec/115451/venue-n-line-exterior-right-front-three-quarter-3.jpeg?isig=0",
+            specs: VehicleSpecs(
+                engine: "1.0L Turbo Petrol",
+                horsepower: "120 hp",
+                fuelEconomy: "18.1 kmpl",
+                transmission: "6MT/7DCT"
+            ),
+            vehicleType: .suv
+        ),
+        Vehicle(
+            name: "Exter",
+            description: "Micro-SUV with bold styling and practical features.",
+            price: 613000,
+            imageURL: "https://imgd.aeplcdn.com/1280x720/n/cw/ec/158223/exterior-right-front-three-quarter-3.jpeg?isig=0",
+            specs: VehicleSpecs(
+                engine: "1.2L Kappa Petrol",
+                horsepower: "83 hp",
+                fuelEconomy: "19.4 kmpl",
+                transmission: "5MT/AMT"
+            ),
+            vehicleType: .suv
+        ),
+        Vehicle(
+            name: "Alcazar",
+            description: "Premium 7-seater SUV, comfort and space for families.",
+            price: 1678000,
+            imageURL: "https://imgd.aeplcdn.com/1280x720/n/cw/ec/144687/exterior-left-front-three-quarter-2.jpeg?isig=0",
+            specs: VehicleSpecs(
+                engine: "1.5L Turbo Petrol/1.5L Diesel",
+                horsepower: "160/116 hp",
+                fuelEconomy: "18-20 kmpl",
+                transmission: "6MT/7DCT/6AT"
+            ),
+            vehicleType: .suv
+        ),
+        Vehicle(
+            name: "Tucson",
+            description: "Sophisticated and luxurious premium SUV with advanced tech.",
+            price: 2900000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/Tucson/9162/1659779956637/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "2.0L Petrol/Diesel",
+                horsepower: "156-186 hp",
+                fuelEconomy: "15-18 kmpl",
+                transmission: "6AT/8AT"
+            ),
+            vehicleType: .suv
+        ),
+        Vehicle(
+            name: "Aura",
+            description: "Stylish compact sedan for everyday commuting.",
+            price: 649000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/Aura/9595/1674465490425/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "1.2L Kappa Petrol",
+                horsepower: "83 hp",
+                fuelEconomy: "17.5-20.5 kmpl",
+                transmission: "5MT/AMT"
+            ),
+            vehicleType: .sedan
+        ),
+        Vehicle(
+            name: "Verna",
+            description: "Sporty and feature-rich mid-size sedan.",
+            price: 1100000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/Verna/10103/1684307221447/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "1.5L Petrol/1.5L Turbo Petrol",
+                horsepower: "115-160 hp",
+                fuelEconomy: "18.6-20.6 kmpl",
+                transmission: "6MT/IVT/7DCT"
+            ),
+            vehicleType: .sedan
+        ),
+        Vehicle(
+            name: "Grand i10 NIOS",
+            description: "Peppy and practical hatchback for city drives.",
+            price: 592000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/Grand-i10-Nios/9596/1674463428389/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "1.2L Kappa Petrol",
+                horsepower: "83 hp",
+                fuelEconomy: "17.5-20.7 kmpl",
+                transmission: "5MT/AMT"
+            ),
+            vehicleType: .hatchback
+        ),
+        Vehicle(
+            name: "i20",
+            description: "Premium hatchback with segment-leading features.",
+            price: 704000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/i20/10042/1681711200192/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "1.2L Kappa Petrol",
+                horsepower: "83 hp",
+                fuelEconomy: "19.6-20 kmpl",
+                transmission: "5MT/IVT"
+            ),
+            vehicleType: .hatchback
+        ),
+        Vehicle(
+            name: "i20 N Line",
+            description: "Sporty version of i20 with dynamic performance.",
+            price: 1000000,
+            imageURL: "https://stimg.cardekho.com/images/carexteriorimages/930x620/Hyundai/i20-N-Line/9594/1674465814041/front-left-side-47.jpg",
+            specs: VehicleSpecs(
+                engine: "1.0L Turbo Petrol",
+                horsepower: "120 hp",
+                fuelEconomy: "20.2 kmpl",
+                transmission: "6MT/7DCT"
+            ),
+            vehicleType: .hatchback
+        ),
+        Vehicle(
+            name: "IONIQ 5",
+            description: "Hyundai's futuristic electric crossover with long range.",
+            price: 4605000,
+            imageURL: "https://www.carandbike.com/_next/image?url=https%3A%2F%2Fimages.carandbike.com%2Fcar-images%2Fgallery%2Fhyundai%2Fioniq-5%2Fexterior%2Fhyundai-ioniq-5-front-view-1.webp%3Fv%3D1670732483&w=1920&q=75",
+            specs: VehicleSpecs(
+                engine: "Electric Motor",
+                horsepower: "217 hp",
+                fuelEconomy: "631 km (ARAI Range)",
+                transmission: "Automatic (Single Speed Reducer)"
+            ),
+            vehicleType: .ev
+        ),
+        Vehicle(
+            name: "Creta Electric",
+            description: "The electric version of India's favorite SUV, now silent and emission-free.",
+            price: 1800000,
+            imageURL: "https://imgd.aeplcdn.com/1280x720/n/cw/ec/154449/creta-ev-exterior-right-front-three-quarter.jpeg?isig=0",
+            specs: VehicleSpecs(
+                engine: "Electric Motor",
+                horsepower: "138 hp",
+                fuelEconomy: "450 km (Expected Range)",
+                transmission: "Automatic (Single Speed)"
+            ),
+            vehicleType: .ev
+        )
+    ]
+
+    var featuredVehicle: Vehicle {
+        vehicles[0]
+    }
+
+    func filteredVehicles(for type: VehicleType) -> [Vehicle] {
+        if type == .all {
+            return vehicles
+        } else {
+            return vehicles.filter { $0.vehicleType == type }
+        }
+    }
+}
