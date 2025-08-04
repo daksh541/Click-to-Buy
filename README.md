@@ -17,6 +17,13 @@ A SwiftUI-based iOS app for browsing, configuring, and purchasing   vehicles, in
 - **Dynamic UI**: SwiftUI-powered interface with motion-based animations and dark/light mode support.
 - **Purchase Flow**: Configure vehicles and initiate purchases, stored in Firestore.
 
+## Featured Project: Click to Buy 🚗
+A SwiftUI iOS app for browsing and purchasing vehicles, with Firebase authentication and Hindi/English localization. Features vehicle comparison, favorites, and a sleek UI.
+
+[Check it out!](https://github.com/daksh541/Click-To-Buy)
+
+**Tech Stack**: SwiftUI, Firebase, Google Sign-In, Apple Sign-In
+
 ## Project Structure
 Click-To-Buy
 ├── App
