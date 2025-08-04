@@ -1,0 +1,293 @@
+//
+// ContentView.swift
+// Click to Buy
+//
+
+import SwiftUI
+
+struct ContentView: View {
+    @EnvironmentObject var viewModel: VehicleViewModel
+    @EnvironmentObject var comparisonManager: ComparisonManager
+    @EnvironmentObject var favoritesManager: FavoritesManager
+    @Namespace var vehicleNamespace
+    @State private var selectedVehicleType: VehicleType = .all
+    @State private var searchText = ""
+    @State private var showingFilter = false
+    @AppStorage("colorScheme") private var userColorScheme: String = "system"
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                ConditionalGradientBackground(userColorScheme: userColorScheme)
+                    .ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    Text(LocalizedStringKey("app_title"))
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                        .padding(.top, 20)
+                        .padding(.bottom, 10)
+                        .accessibilityLabel(LocalizedStringKey("app_title_accessibility"))
+
+                    // Vehicle Type Filter Picker
+                    Picker(LocalizedStringKey("vehicle_type_picker_title"), selection: $selectedVehicleType) {
+                        ForEach(VehicleType.allCases) { type in
+                            Text(LocalizedStringKey(type.rawValue.lowercased()))
+                                .tag(type)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+                    .padding(.bottom, 10)
+                    .background(Color.primary.opacity(AppTheme.cardBackgroundOpacity))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .accessibilityLabel(LocalizedStringKey("vehicle_type_picker_accessibility"))
+
+                    ScrollView {
+                        LazyVStack(spacing: 15) {
+                            FeaturedVehicleView(vehicle: viewModel.featuredVehicle, namespace: vehicleNamespace)
+                                .padding(.horizontal)
+
+                            Text(LocalizedStringKey("explore_models"))
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                                .padding(.horizontal)
+                                .accessibilityLabel(LocalizedStringKey("explore_models_accessibility"))
+
+                            ForEach(filteredVehicles) { vehicle in
+                                NavigationLink(destination: VehicleDetailView(vehicle: vehicle, namespace: vehicleNamespace)) {
+                                    VehicleCardView(vehicle: vehicle, namespace: vehicleNamespace)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.bottom, 20)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(LocalizedStringKey("app_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always)) {
+                ForEach(viewModel.vehicles.filter { $0.name.localizedCaseInsensitiveContains(searchText) && !searchText.isEmpty }.prefix(5)) { vehicle in
+                    Text(vehicle.name).searchCompletion(vehicle.name)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        Image(systemName: "car.fill")
+                            .foregroundColor(.accentColor)
+                            .accessibilityLabel(LocalizedStringKey("brand_icon_accessibility"))
+                        Text(LocalizedStringKey("brand_name"))
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack {
+                        // Color Scheme Picker
+                        Menu {
+                            Picker(LocalizedStringKey("appearance_picker_title"), selection: $userColorScheme) {
+                                Text(LocalizedStringKey("system_appearance")).tag("system")
+                                Text(LocalizedStringKey("light_appearance")).tag("light")
+                                Text(LocalizedStringKey("dark_appearance")).tag("dark")
+                            }
+                        } label: {
+                            Image(systemName: "circle.lefthalf.filled")
+                                .foregroundColor(.primary)
+                                .accessibilityLabel(LocalizedStringKey("appearance_picker_accessibility"))
+                        }
+
+                        // Favorites
+                        NavigationLink(destination: FavoritesView()) {
+                            Image(systemName: "heart.fill")
+                                .foregroundColor(.red)
+                                .font(.title2)
+                                .accessibilityLabel(LocalizedStringKey("favorites_accessibility"))
+                        }
+
+                        // Profile
+                        NavigationLink(destination: ProfileView()) {
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.primary)
+                                .font(.title2)
+                                .accessibilityLabel(LocalizedStringKey("profile_accessibility"))
+                        }
+
+                        // Filter
+                        Button(action: { showingFilter = true }) {
+                            Image(systemName: "slider.horizontal.3")
+                                .foregroundColor(.primary)
+                                .accessibilityLabel(LocalizedStringKey("filter_accessibility"))
+                        }
+                    }
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if !comparisonManager.selectedVehicles.isEmpty {
+                    NavigationLink(destination: CompareView()) {
+                        Label(LocalizedStringKey("compare_button \(comparisonManager.selectedVehicles.count)"), systemImage: "arrow.left.arrow.right.circle.fill")
+                            .font(.headline)
+                            .padding()
+                            .background(Color.blue.opacity(AppTheme.accentButtonBackgroundOpacity))
+                            .foregroundColor(.white)
+                            .clipShape(Capsule())
+                            .shadow(radius: 5)
+                            .padding()
+                            .accessibilityLabel(LocalizedStringKey("compare_accessibility \(comparisonManager.selectedVehicles.count)"))
+                    }
+                }
+            }
+            .sheet(isPresented: $showingFilter) {
+                FilterView()
+                    .environmentObject(viewModel)
+            }
+        }
+        .preferredColorScheme(
+            userColorScheme == "system" ? nil : (userColorScheme == "light" ? .light : .dark)
+        )
+    }
+
+    var filteredVehicles: [Vehicle] {
+        let filteredByType = viewModel.vehicles.filter { vehicle in
+            selectedVehicleType == .all || vehicle.vehicleType == selectedVehicleType
+        }
+
+        if searchText.isEmpty {
+            return filteredByType
+        } else {
+            return filteredByType.filter { vehicle in
+                vehicle.name.localizedCaseInsensitiveContains(searchText) ||
+                vehicle.description.localizedCaseInsensitiveContains(searchText) ||
+                vehicle.specs.engine.localizedCaseInsensitiveContains(searchText) ||
+                vehicle.specs.horsepower.localizedCaseInsensitiveContains(searchText) ||
+                vehicle.specs.fuelEconomy.localizedCaseInsensitiveContains(searchText) ||
+                vehicle.specs.transmission.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
+}
+
+struct FeaturedVehicleView: View {
+    let vehicle: Vehicle
+    @State private var isAnimating = false
+    @State private var roll: Double = 0.0
+    @State private var pitch: Double = 0.0
+    @StateObject private var motionManager = MotionManager()
+    let namespace: Namespace.ID
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 25)
+                .fill(Color.primary.opacity(AppTheme.cardBackgroundOpacity))
+                .frame(height: 250)
+                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+
+            VStack {
+                AsyncImage(url: URL(string: vehicle.imageURL)) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .matchedGeometryEffect(id: "vehicleImage_\(vehicle.id)_featured", in: namespace)
+                } placeholder: {
+                    ProgressView()
+                        .frame(height: 180)
+                }
+
+                Text(LocalizedStringKey(vehicle.name))
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .matchedGeometryEffect(id: "vehicleName_\(vehicle.id)_featured", in: namespace)
+                    .accessibilityLabel(LocalizedStringKey("vehicle_name_accessibility \(vehicle.name)"))
+
+                Text(String(localized: "vehicle_price_format", String(format: "%.0f", vehicle.price)))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .accessibilityLabel(LocalizedStringKey("vehicle_price_accessibility \(String(format: "%.0f", vehicle.price))"))
+            }
+            .padding()
+        }
+        .rotation3DEffect(
+            .degrees(roll * 5),
+            axis: (x: 0.0, y: 1.0, z: 0.0)
+        )
+        .rotation3DEffect(
+            .degrees(pitch * 5),
+            axis: (x: 1.0, y: 0.0, z: 0.0)
+        )
+        .scaleEffect(isAnimating ? 1.0 : 0.95)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                isAnimating = true
+            }
+            motionManager.startUpdates()
+        }
+        .onDisappear {
+            motionManager.stopUpdates()
+        }
+        .onChange(of: motionManager.roll) { newRoll in
+            self.roll = newRoll
+        }
+        .onChange(of: motionManager.pitch) { newPitch in
+            self.pitch = newPitch
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(LocalizedStringKey("featured_vehicle_accessibility \(vehicle.name)"))
+    }
+}
+
+struct VehicleCardView: View {
+    let vehicle: Vehicle
+    let namespace: Namespace.ID
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.primary.opacity(AppTheme.cardBackgroundOpacity))
+                .frame(height: 120)
+                .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 2)
+
+            HStack {
+                AsyncImage(url: URL(string: vehicle.imageURL)) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .matchedGeometryEffect(id: "vehicleImage_\(vehicle.id)", in: namespace)
+                } placeholder {
+                    ProgressView()
+                        .frame(width: 100)
+                }
+
+                VStack(alignment: .leading) {
+                    Text(LocalizedStringKey(vehicle.name))
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .matchedGeometryEffect(id: "vehicleName_\(vehicle.id)", in: namespace)
+                        .accessibilityLabel(LocalizedStringKey("vehicle_name_accessibility \(vehicle.name)"))
+                    Text(String(localized: "vehicle_price_format", String(format: "%.0f", vehicle.price)))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel(LocalizedStringKey("vehicle_price_accessibility \(String(format: "%.0f", vehicle.price))"))
+                    Text(LocalizedStringKey(vehicle.description))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+            }
+            .padding()
+        }
+        .padding(.horizontal)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(LocalizedStringKey("vehicle_card_accessibility \(vehicle.name)"))
+    }
+}
