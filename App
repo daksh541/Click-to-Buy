@@ -1,0 +1,56 @@
+//
+// App.swift
+// Click to Buy
+//
+
+import SwiftUI
+import FirebaseCore
+import UserNotifications
+
+@main
+struct HyundaiApp: App {
+    @StateObject private var favoritesManager = FavoritesManager()
+    @StateObject private var comparisonManager = ComparisonManager()
+    @StateObject private var viewModel = VehicleViewModel()
+    @StateObject private var authManager = AuthManager()
+    @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        FirebaseApp.configure()
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            if authManager.isAuthenticated {
+                ContentView()
+                    .environmentObject(favoritesManager)
+                    .environmentObject(comparisonManager)
+                    .environmentObject(viewModel)
+                    .environmentObject(authManager)
+            } else {
+                LoginView()
+                    .environmentObject(authManager)
+            }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                UIApplication.shared.applicationIconBadgeNumber = 0
+            }
+        }
+        .onAppear(perform: setupPushNotifications)
+    }
+
+    private func setupPushNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, error in
+            if success {
+                print("Notification permission granted.")
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            } else if let error = error {
+                print("Notification permission denied: \(error.localizedDescription)")
+            }
+        }
+        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+    }
+}
