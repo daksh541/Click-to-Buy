@@ -1,0 +1,91 @@
+//
+// Theme.swift
+// Click to Buy
+//
+
+import SwiftUI
+import AVFoundation
+
+struct AppTheme {
+    static let primaryBackgroundLight = LinearGradient(gradient: Gradient(colors: [Color.accentColor.opacity(0.2), Color.blue.opacity(0.1)]), startPoint: .top, endPoint: .bottom)
+    static let primaryBackgroundDark = LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.6), Color.purple.opacity(0.5)]), startPoint: .top, endPoint: .bottom)
+
+    static let cardBackgroundOpacity: Double = 0.1
+    static let accentButtonBackgroundOpacity: Double = 0.8
+}
+
+struct ConditionalGradientBackground: View {
+    let userColorScheme: String
+    @Environment(\.colorScheme) var systemColorScheme
+
+    var body: some View {
+        let currentScheme: ColorScheme = {
+            if userColorScheme == "system" {
+                return systemColorScheme
+            } else {
+                return userColorScheme == "light" ? .light : .dark
+            }
+        }()
+
+        if currentScheme == .light {
+            AppTheme.primaryBackgroundLight
+        } else {
+            AppTheme.primaryBackgroundDark
+        }
+    }
+}
+
+struct SpecificationRow: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(LocalizedStringKey(title))
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+            Spacer()
+            Text(value)
+                .foregroundColor(.secondary)
+        }
+        .accessibilityLabel(LocalizedStringKey("\(title)_accessibility \(value)"))
+    }
+}
+
+struct DetailNavigationButton: View {
+    let title: String
+    let icon: String
+
+    var body: some View {
+        VStack {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.accentColor)
+            Text(LocalizedStringKey(title))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 15)
+        .background(Color.primary.opacity(AppTheme.cardBackgroundOpacity))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 2)
+        .accessibilityLabel(LocalizedStringKey("\(title)_navigation_accessibility"))
+    }
+}
+
+struct ComparisonSpecRow: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        HStack(alignment: .top) {
+            Text(LocalizedStringKey(title) + ":")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(LocalizedStringKey(value))
+                .font(.caption)
+                .foregroundColor(.primary)
