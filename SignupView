@@ -1,0 +1,143 @@
+//
+// SignupView.swift
+// Click to Buy
+//
+
+import SwiftUI
+import AuthenticationServices
+
+struct SignupView: View {
+    @EnvironmentObject var authManager: AuthManager
+    @State private var email = ""
+    @State private var password = ""
+    @State private var fullName = ""
+    @State private var showingError = false
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                Text(LocalizedStringKey("signup_title"))
+                    .font(.largeTitle).bold()
+                    .padding(.bottom, 40)
+                    .accessibilityLabel(LocalizedStringKey("signup_accessibility"))
+
+                TextField(LocalizedStringKey("full_name_placeholder"), text: $fullName)
+                    .padding()
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .accessibilityLabel(LocalizedStringKey("full_name_accessibility"))
+
+                TextField(LocalizedStringKey("email_placeholder"), text: $email)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .padding()
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .accessibilityLabel(LocalizedStringKey("email_accessibility"))
+
+                SecureField(LocalizedStringKey("password_placeholder"), text: $password)
+                    .padding()
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
+                    .accessibilityLabel(LocalizedStringKey("password_accessibility"))
+
+                Button(LocalizedStringKey("signup_button")) {
+                    Task {
+                        await authManager.signup(email: email, password: password, fullName: fullName)
+                        if authManager.isAuthenticated {
+                            dismiss()
+                        }
+                    }
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.accentColor)
+                .cornerRadius(10)
+                .padding(.horizontal)
+                .disabled(email.isEmpty || password.isEmpty || fullName.isEmpty)
+                .accessibilityLabel(LocalizedStringKey("signup_button_accessibility"))
+
+                // Google Sign-In Button
+                Button(action: {
+                    Task {
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let rootViewController = windowScene.windows.first?.rootViewController {
+                            await authManager.signInWithGoogle(presenting: rootViewController)
+                            if authManager.isAuthenticated {
+                                dismiss()
+                            }
+                        }
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "g.circle.fill")
+                        Text(LocalizedStringKey("google_signin_button"))
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+                }
+                .padding(.horizontal)
+                .padding(.top, 10)
+                .accessibilityLabel(LocalizedStringKey("google_signin_accessibility"))
+
+                // Apple Sign-In Button
+                SignInWithAppleButton(
+                    .signUp,
+                    onRequest: { request in
+                        request = authManager.startSignInWithAppleFlow()
+                    },
+                    onCompletion: { result in
+                        switch result {
+                        case .success(let authorization):
+                            Task {
+                                await authManager.signInWithApple(authorization: authorization)
+                                if authManager.isAuthenticated {
+                                    dismiss()
+                                }
+                            }
+                        case .failure(let error):
+                            DispatchQueue.main.async {
+                                authManager.authError = error
+                                showingError = true
+                            }
+                        }
+                    }
+                )
+                .frame(height: 50)
+                .padding(.horizontal)
+                .padding(.top, 10)
+                .accessibilityLabel(LocalizedStringKey("apple_signin_accessibility"))
+
+                Spacer()
+
+                Button(LocalizedStringKey("already_have_account")) {
+                    dismiss()
+                }
+                .padding(.bottom, 20)
+                .accessibilityLabel(LocalizedStringKey("login_prompt_accessibility"))
+            }
+            .navigationTitle(LocalizedStringKey("signup_title"))
+            .navigationBarHidden(true)
+            .alert(isPresented: $showingError) {
+                Alert(
+                    title: Text(LocalizedStringKey("error_title")),
+                    message: Text(authManager.authError?.localizedDescription ?? ""),
+                    dismissButton: .default(Text(LocalizedStringKey("ok_button"))) {
+                        authManager.authError = nil
+                    }
+                )
+            }
+        }
+    }
+}
