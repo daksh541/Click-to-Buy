@@ -25,6 +25,7 @@ A SwiftUI iOS app for browsing and purchasing vehicles, with Firebase authentica
 **Tech Stack**: SwiftUI, Firebase, Google Sign-In, Apple Sign-In
 
 ## Project Structure
+```
 Click-To-Buy
 ├── App
 │   ├── App.swift
@@ -43,7 +44,7 @@ Click-To-Buy
 ├── README.md
 ├── .gitignore
 ├── LICENSE
-
+```
 
 ## Screenshots
 | Home Screen | Vehicle Details | Login Screen |
